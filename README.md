@@ -671,7 +671,7 @@ This project uses several open-source libraries. See <LICENSE> for complete attr
 
 <div align="center">
 
-**Made with ❤️ for Indian Educators**
+
 
 [Website](https://cbseeducator.in) • [Documentation](https://docs.cbseeducator.in) • [Support](mailto:support@cbseeducator.in)
 
