@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { BookOpen, Eye, EyeOff } from 'lucide-react'
+import { BookOpen, Eye, EyeOff, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAppDispatch } from '@/store/hooks'
 import { login } from '@/store/slices/authSlice'
@@ -11,6 +11,17 @@ import { storage } from '@/lib/storage'
 import type { User } from '@/types'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
+
+const DEMO_USER: User = {
+  id: 'demo-1',
+  name: 'Priya Sharma',
+  email: 'demo@edudesk.in',
+  school: 'Delhi Public School',
+  subjects: ['Mathematics', 'Science'],
+  grades: [9, 10, 11],
+  role: 'teacher',
+  createdAt: new Date().toISOString(),
+}
 
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -23,6 +34,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [demoLoading, setDemoLoading] = useState(false)
 
   const {
     register,
@@ -32,13 +44,13 @@ export default function LoginPage() {
 
   async function onSubmit(data: FormData) {
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 600))
+    await new Promise((r) => setTimeout(r, 400))
 
     const accounts = storage.get<User[]>('accounts') ?? []
     const found = accounts.find((a) => a.email === data.email)
 
     if (!found) {
-      toast.error('No account found. Please register first.')
+      toast.error('No account found with this email.')
       setLoading(false)
       return
     }
@@ -53,24 +65,23 @@ export default function LoginPage() {
     dispatch(login(found))
     toast.success(`Welcome back, ${found.name.split(' ')[0]}!`)
     navigate('/dashboard')
-    setLoading(false)
   }
 
-  function fillDemo() {
+  async function enterDemo() {
+    setDemoLoading(true)
+    await new Promise((r) => setTimeout(r, 400))
+
+    // Always ensure demo account exists (overwrite any stale state)
     const accounts = storage.get<User[]>('accounts') ?? []
-    if (accounts.length > 0) return
-    const demoUser: User = {
-      id: 'demo-1',
-      name: 'Priya Sharma',
-      email: 'demo@edudesk.in',
-      school: 'Delhi Public School',
-      subjects: ['Mathematics', 'Science'],
-      grades: [9, 10, 11],
-      role: 'teacher',
-      createdAt: new Date().toISOString(),
-    }
-    storage.set('accounts', [demoUser])
-    storage.set('passwords', { 'demo@edudesk.in': 'demo123' })
+    const withoutDemo = accounts.filter((a) => a.id !== 'demo-1')
+    storage.set('accounts', [...withoutDemo, DEMO_USER])
+    const passwords = storage.get<Record<string, string>>('passwords') ?? {}
+    passwords['demo@edudesk.in'] = 'demo123'
+    storage.set('passwords', passwords)
+
+    dispatch(login(DEMO_USER))
+    toast.success('Welcome to EduDesk demo!')
+    navigate('/dashboard')
   }
 
   return (
@@ -124,20 +135,28 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-            <p className="text-xs text-blue-700 font-medium mb-1">Demo Account</p>
-            <p className="text-xs text-blue-600">Email: demo@edudesk.in</p>
-            <p className="text-xs text-blue-600">Password: demo123</p>
-            <button
-              onClick={() => {
-                fillDemo()
-                toast.success('Demo account ready!')
-              }}
-              className="mt-2 text-xs text-primary-600 font-medium hover:underline"
-            >
-              Set up demo account →
-            </button>
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200" />
+            </div>
+            <div className="relative flex justify-center text-xs text-gray-400">
+              <span className="bg-white px-3">or</span>
+            </div>
           </div>
+
+          <Button
+            variant="secondary"
+            className="w-full"
+            icon={<Zap className="w-4 h-4 text-amber-500" />}
+            onClick={enterDemo}
+            loading={demoLoading}
+          >
+            Enter Demo Account
+          </Button>
+
+          <p className="text-center text-xs text-gray-400 mt-3">
+            No sign-up needed · Pre-loaded with sample data
+          </p>
 
           <p className="text-center text-sm text-gray-500 mt-6">
             Don't have an account?{' '}
